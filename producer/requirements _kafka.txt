@@ -1,0 +1,5 @@
+confluent-kafka
+kafka-python
+jupyter
+notebook
+pyspark

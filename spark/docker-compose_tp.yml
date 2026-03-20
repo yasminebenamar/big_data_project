@@ -1,0 +1,136 @@
+services:
+  spark-jupyter:
+    build: .
+    image: spark-jupyter
+    container_name: spark-jupyter
+    networks:
+      - network1
+    ports:
+      - "8888:8888"
+      - "4041:4040"
+    volumes:
+       - ./apps:/opt/spark-apps
+       - ./data:/opt/spark-data
+       - ./spark-logs:/tmp/spark-events
+    environment:
+      - SPARK_LOCAL_IP=spark-master
+      - SPARK_MASTER_CORES=2
+      - SPARK_WORKLOAD=master
+    entrypoint: /bin/bash
+    command: -c "/opt/spark-apps/jupyter_start_3.sh; tail -f /dev/null"
+
+  spark-master:
+    build: .
+    image: spark-master
+    container_name: spark-master
+    networks:
+      - network1
+    ports:
+      - "9080:8080"
+      - "7077:7077"
+      - "7001:7000"
+      - "4040:4040"
+      - "8889:8889"
+    volumes:
+       - ./apps:/opt/spark-apps
+       - ./data:/opt/spark-data
+       - ./spark-logs:/tmp/spark-events
+    environment:
+      - SPARK_LOCAL_IP=spark-master
+      - SPARK_MASTER_CORES=2
+      - SPARK_WORKLOAD=master
+    entrypoint: /bin/bash
+    command: /opt/spark-apps/jupyter_start_2.sh; tail -f /dev/null"
+
+  spark-worker-a:
+    build: .
+    image: spark-worker-a
+    container_name: spark-worker-a
+    networks:
+      - network1
+    mem_limit: 1024m
+    ports:
+      - "9082:8080"
+      - "7002:7000"
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_WORKER_CORES=3
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_EXECUTOR_MEMORY=1G
+      - SPARK_WORKLOAD=worker
+      - SPARK_LOCAL_IP=spark-worker-a
+    volumes:
+      - ./apps:/opt/spark-apps
+      - ./data:/opt/spark-data
+      - ./spark-logs:/tmp/spark-events
+
+  spark-worker-b:
+    build: .
+    image: spark-worker-b
+    container_name: spark-worker-b
+    networks:
+      - network1
+    mem_limit: 1024m
+    ports:
+      - "9083:8080"
+      - "7003:7000"
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_WORKER_CORES=3
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_DRIVER_MEMORY=1G
+      - SPARK_EXECUTOR_MEMORY=1G
+      - SPARK_WORKLOAD=worker
+      - SPARK_LOCAL_IP=spark-worker-b
+    volumes:
+      - ./apps:/opt/spark-apps
+      - ./data:/opt/spark-data
+      - ./spark-logs:/tmp/spark-events
+
+  spark-worker-c:
+    build: .
+    image: spark-worker-c
+    container_name: spark-worker-c
+    networks:
+      - network1
+    mem_limit: 1024m
+    ports:
+      - "9084:8080"
+      - "7004:7000"
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_WORKER_CORES=3
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_DRIVER_MEMORY=1G
+      - SPARK_EXECUTOR_MEMORY=1G
+      - SPARK_WORKLOAD=worker
+      - SPARK_LOCAL_IP=spark-worker-c
+    volumes:
+      - ./apps:/opt/spark-apps
+      - ./data:/opt/spark-data
+      - ./spark-logs:/tmp/spark-events
+
+  spark-history-server:
+    build: .
+    image: spark-history
+    container_name: spark-history
+    depends_on:
+      - spark-master
+    entrypoint: /bin/bash
+    command: -c "/opt/spark/sbin/start-history-server.sh; tail -f /dev/null"
+    volumes:
+      - ./spark-logs:/tmp/spark-events
+    
+    ports:
+      - '18080:18080'
+
+networks:
+  network1:
+    name: mynetwork
+    driver: bridge

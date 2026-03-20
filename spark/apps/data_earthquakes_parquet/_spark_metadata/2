@@ -1,0 +1,2 @@
+v1
+{"path":"file:///opt/spark-apps/data_earthquakes_parquet/year=2026/month=3/day=17/hour=9/part-00000-76859a0f-0567-4f08-a68f-e45c43e3ee3a.c000.snappy.parquet","size":4016,"isDir":false,"modificationTime":1773740698939,"blockReplication":1,"blockSize":33554432,"action":"add"}

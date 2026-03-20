@@ -1,0 +1,18 @@
+[{
+   "data": {
+       "emp_id": "12345",
+       "emp_name": "Mohan",
+       "awards": [
+           {
+               "award_type": "Internal",
+               "award_name": "Best_emp_of_the_year",
+               "year": "2000"
+           },
+           {
+               "award_type": "External",
+               "award_name": "Best_presenter",
+               "year": "2001"
+           }
+       ]
+   }
+}]

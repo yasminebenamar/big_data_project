@@ -1,0 +1,4 @@
+v1
+{"path":"file:///opt/spark-apps/data_earthquakes_parquet/year=2026/month=3/day=17/hour=9/part-00000-acf4df77-6dbd-43b1-88a6-4e4e0aa7e2f3.c000.snappy.parquet","size":49819,"isDir":false,"modificationTime":1773751818192,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///opt/spark-apps/data_earthquakes_parquet/year=2026/month=3/day=17/hour=10/part-00000-3f4484b8-d795-4ffe-88b2-7d5a3ac75083.c000.snappy.parquet","size":60222,"isDir":false,"modificationTime":1773751818243,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///opt/spark-apps/data_earthquakes_parquet/year=2026/month=3/day=17/hour=11/part-00000-cbb352be-7bb1-46fa-a8cd-b3a9f3fda392.c000.snappy.parquet","size":42957,"isDir":false,"modificationTime":1773751818273,"blockReplication":1,"blockSize":33554432,"action":"add"}

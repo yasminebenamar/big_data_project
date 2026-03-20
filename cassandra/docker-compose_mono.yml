@@ -1,0 +1,17 @@
+services:
+  cassandra:
+    image: cassandra:5.0.6
+    container_name: cassandra
+    ports:
+      - "9042:9042"
+    environment:
+      - CASSANDRA_SEEDS=cassandra
+      - HEAP_NEWSIZE=128M
+      - MAX_HEAP_SIZE=1024M
+    networks:
+      - network1
+
+networks:
+  network1:
+    name: mynetwork
+    driver: bridge
