@@ -1,7 +1,7 @@
 #!/bin/bash
- 
+
 BATCH_INTERVAL=3600
- 
+
 # Fonction de vérification
 check() {
     if [ $? -ne 0 ]; then
@@ -9,17 +9,29 @@ check() {
         exit 1
     fi
 }
- 
-# Producer
+
+# Lancer le Producer
 docker exec -d producer bash -c "python3 /producer/app/producer.py > /tmp/producer.log 2>&1"
 check "Producer"
 echo "Producer démarré"
- 
-# Speed Layer
+
+# Lancer le Speed Layer (streaming)
 docker exec -d spark-master bash -c "python3 /opt/spark-apps/speed_layer.py > /tmp/speed.log 2>&1"
 check "Speed Layer"
 echo "Speed Layer démarré"
- 
+
+# Lancer Grafana (Docker) si pas déjà lancé
+if [ -z "$(docker ps -q -f name=grafana)" ]; then
+    docker run -d -p 3000:3000 --name=grafana grafana/grafana
+    check "Grafana"
+    echo "Grafana démarré sur http://localhost:3000"
+else
+    echo "Grafana déjà en cours d'exécution"
+fi
+
+echo "Attente génération données..."
+sleep 60
+
 # Batch périodique
 while true; do
     echo "Lancement Batch Layer..."

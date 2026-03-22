@@ -164,9 +164,11 @@ def main():
         .withColumn("depth",     col("depth").cast("double"))
     )
 
-    # Écriture table principale
-    write_to_cassandra(df_historic, "earthquakes_batch")
-
+    cols = [
+    "id", "time", "mag", "rms", "gap", "nst",
+    "magtype", "place", "longitude", "latitude", "depth"]
+    write_to_cassandra(df_historic.select(cols), "earthquakes_batch")
+    
     # --- Moyenne par jour ---
     df_avg_day = (df_historic
         .withColumn("day", to_date(col("time")))

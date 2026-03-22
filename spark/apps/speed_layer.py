@@ -3,14 +3,12 @@ Spark Structured Streaming + Apache Kafka + Cassandra
 Consumer de séismes USGS
 """
 
-import uuid
-
 from pyspark.sql import SparkSession
+from pyspark.sql.types import StructType, StructField, LongType, DoubleType, StringType,IntegerType
+from pyspark.sql.functions import from_json, col, unix_timestamp, when, to_timestamp, udf, lit, expr, year, month, dayofmonth, hour, current_timestamp
 from pyspark.sql.functions import *
-from pyspark.sql.functions import (col, from_json, to_timestamp, udf,
-                                   unix_timestamp, when)
-from pyspark.sql.types import (DoubleType, IntegerType, LongType, StringType, StructField,
-                               StructType)
+
+import uuid
 
 scala_version = '2.13'
 spark_version = '4.0.1'
@@ -59,13 +57,31 @@ def main():
         );
     ''')
 
+    # Nombre de séismes par type d'alertes
+    session.execute('''
+        CREATE TABLE IF NOT EXISTS seismes.alerts_count (
+            alert_level  TEXT,
+            total BIGINT,
+            PRIMARY KEY (alert_level)
+        );
+    ''')
+
+    # Nombre de séismes par catégorie
+    session.execute('''
+        CREATE TABLE IF NOT EXISTS seismes.category_count (
+            category  TEXT,
+            total BIGINT,
+            PRIMARY KEY (category)
+        );
+    ''')
+
     earthquakeSchema = StructType([
         StructField("time",      LongType(),    False),
         StructField("mag",       DoubleType(),  True),
         StructField("place",     StringType(),  True),
         StructField("rms",       DoubleType(),  True),
         StructField("gap",       DoubleType(),  True),
-        StructField("nst",       IntegerType(), True),  # FIX: LongType -> IntegerType pour matcher Cassandra INT
+        StructField("nst",       IntegerType(), True),  
         StructField("magType",   StringType(),  True),
         StructField("longitude", DoubleType(),  True),
         StructField("latitude",  DoubleType(),  True),
@@ -155,7 +171,7 @@ def main():
     # --- Écriture Cassandra ---
     def writeToCassandra(writeDF, epochId):
         (writeDF.select("id", "time", "mag", "place", "rms", "gap", "nst", "magtype",
-                    "longitude", "latitude", "depth")
+                    "longitude", "latitude", "depth","category", "danger_index", "is_reliable", "is_missing", "alert_level")
             .write
             .format("org.apache.spark.sql.cassandra")
             .options(table="earthquakes_streaming", keyspace="seismes")
@@ -168,9 +184,46 @@ def main():
         .withColumn("day", dayofmonth("time"))
         .withColumn("hour", hour("time"))
     )
-    
-    
 
+    # --- Écriture des counts dans Cassandra ---
+    def writeCountsToCassandra(batchDF, batchId):
+        # Count par alert_level
+        alert_count_df = (batchDF.groupBy("alert_level")
+                        .count()
+                        .withColumnRenamed("count", "total")
+                        )
+        # Upsert dans la table alerts_count
+        alert_count_df.write \
+            .format("org.apache.spark.sql.cassandra") \
+            .options(table="alerts_count", keyspace="seismes") \
+            .mode("append") \
+            .save()
+        
+        # Count par category
+        category_count_df = (batchDF.groupBy("category")
+                            .count()
+                            .withColumnRenamed("count", "total")
+                            )
+        # Upsert dans la table category_count
+        category_count_df.write \
+            .format("org.apache.spark.sql.cassandra") \
+            .options(table="category_count", keyspace="seismes") \
+            .mode("append") \
+            .save()
+        
+    def foreachBatchFunction(batchDF, batchId):
+        # Écriture des séismes dans la table principale
+        writeToCassandra(batchDF, batchId)
+        
+        # Écriture des counts
+        writeCountsToCassandra(batchDF, batchId)
+
+    # Lancer le streaming avec counts
+    query_counts = df_processed.writeStream \
+        .foreachBatch(foreachBatchFunction) \
+        .outputMode("append") \
+        .start()
+        
     query1 = df_processed.writeStream \
         .foreachBatch(writeToCassandra) \
         .outputMode("append")  \
