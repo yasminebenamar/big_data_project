@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BATCH_INTERVAL=3600
+BATCH_INTERVAL=86400
 
 # Fonction de vérification
 check() {
