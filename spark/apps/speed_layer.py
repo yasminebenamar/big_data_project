@@ -109,6 +109,7 @@ def main():
         .option("kafka.bootstrap.servers", "broker:29092")
         .option("subscribe", "earthquakes")
         .option("startingOffsets", "latest")
+        .option("failOnDataLoss", "false")
         .load()
     )
 
@@ -134,7 +135,7 @@ def main():
 
     df1 = df1.withColumn(
     "is_missing",
-    col("mag").isNull() | col("latitude").isNull() | col("longitude").isNull())
+    col("mag").isNull() | col("latitude").isNull() | col("longitude").isNull()  | col("depth").isNull() | (col("depth") == 0))
     
     df_clean = df1.filter(col("is_reliable") & ~col("is_missing"))
     df_rejected = df1.filter(~col("is_reliable") | col("is_missing"))
@@ -219,15 +220,10 @@ def main():
         writeCountsToCassandra(batchDF, batchId)
 
     # Lancer le streaming avec counts
-    query_counts = df_processed.writeStream \
-        .foreachBatch(foreachBatchFunction) \
-        .outputMode("append") \
-        .start()
-        
-    query1 = df_processed.writeStream \
-        .foreachBatch(writeToCassandra) \
-        .outputMode("append")  \
-        .start()
+    query = df_processed.writeStream \
+    .foreachBatch(foreachBatchFunction) \
+    .outputMode("append") \
+    .start()
    
     # --- Écriture Parquet ---
     query2 = df_processed.writeStream \
